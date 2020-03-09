@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="android,bitmap," />
+
+
+
+
+  
+
+
+  <link rel="alternate" href="/atom.xml" title="Oops..." type="application/atom+xml" />
+
+
+
+
+
+
+<meta name="description" content="本篇文章内容观点均来自于android官网，欢迎转载，转载请注明出处。文中有不对的地方欢迎交（tu）流（cao）。 前言在app开发过程中，尤其是涉及到图片比较多的页面中，如果图片很大，不对图片做优化处理的话，很容易导致应用崩溃，并抛出如下异常：java.lang.OutofMemoryError: bitmap size exceeds VM budget.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Bitmap加载策略">
+<meta property="og:url" content="http://androidev.tech/2016/08/24/Bitmap%E5%8A%A0%E8%BD%BD%E7%AD%96%E7%95%A5/index.html">
+<meta property="og:site_name" content="Oops...">
+<meta property="og:description" content="本篇文章内容观点均来自于android官网，欢迎转载，转载请注明出处。文中有不对的地方欢迎交（tu）流（cao）。 前言在app开发过程中，尤其是涉及到图片比较多的页面中，如果图片很大，不对图片做优化处理的话，很容易导致应用崩溃，并抛出如下异常：java.lang.OutofMemoryError: bitmap size exceeds VM budget.">
+<meta property="article:published_time" content="2016-08-24T02:04:05.000Z">
+<meta property="article:modified_time" content="2020-03-07T12:03:03.315Z">
+<meta property="article:author" content="xiaofei">
+<meta property="article:tag" content="android">
+<meta property="article:tag" content="bitmap">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"always","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://androidev.tech/2016/08/24/Bitmap加载策略/"/>
+
+
+
+
+
+  <title>Bitmap加载策略 | Oops...</title>
+  
+
+
+
+
+
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?cd08919f3476605765cc6c733dadba0f";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Oops...</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">大道至简</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archives"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-sitemap">
+          <a href="/sitemap.xml" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-sitemap"></i> <br />
+            
+            站点地图
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br />
+            
+            公益404
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://androidev.tech/2016/08/24/Bitmap%E5%8A%A0%E8%BD%BD%E7%AD%96%E7%95%A5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="xiaofei">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.jfif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Oops...">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Bitmap加载策略</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-08-24T10:04:05+08:00">
+                2016-08-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/android/" itemprop="url" rel="index">
+                    <span itemprop="name">android</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-wordcount">
+              
+                
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">字数统计&#58;</span>
+                
+                <span title="字数统计">
+                  6.9k
+                </span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
+                
+                <span title="阅读时长">
+                  31
+                </span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <!-- toc -->
+<p>本篇文章内容观点均来自于<a href="https://developer.android.com/training/displaying-bitmaps/load-bitmap.html#load-bitmap" target="_blank" rel="noopener">android官网</a>，欢迎转载，转载请注明出处。文中有不对的地方欢迎交（tu）流（cao）。</p>
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在app开发过程中，尤其是涉及到图片比较多的页面中，如果图片很大，不对图片做优化处理的话，很容易导致应用崩溃，并抛出如下异常：<br><code>java.lang.OutofMemoryError: bitmap size exceeds VM budget.</code><br><a id="more"></a><br>虽然有很多优秀的开源图片加载框架可供选择，比如Facebook的<code>fresco</code>，它对图片的的内存管理有更好的方式，比如真正实现了三级缓存（两级内存缓存和一级的磁盘缓存），并且使用起来也很简单。但是我们还是有必要对bitmap的加载方式有更深的了解，知其然更要知其所以然，从根本上杜绝OOM的发生。     </p>
+<p>一般来讲，android 应用处理<code>bitmap</code>很多问题是由以下几个原因引起的：</p>
+<ul>
+<li>android设备本身内存限制。设备分配给应用的内存容量是有限的（16M），所以，你的应用应该做好优化使之占用内存空间在最小限制之下；</li>
+<li>bitmap占用大量内存空间，尤其是手机摄像图片。比如一张2592x1936像素的图片，如果图片采用ARGB_8888（ARGB32位）彩色格式，那么加载这张完整图片大概需要19M的内存空间，会立即耗尽设备分配给应用的内存，导致应用崩溃；</li>
+<li>android应用组件如<code>ListView</code>, <code>GridView</code>会一次性加载多张图片。</li>
+</ul>
+<h2 id="高效加载大Bitmap"><a href="#高效加载大Bitmap" class="headerlink" title="高效加载大Bitmap"></a>高效加载大Bitmap</h2><h3 id="获取Bitmap的大小和类型"><a href="#获取Bitmap的大小和类型" class="headerlink" title="获取Bitmap的大小和类型"></a>获取Bitmap的大小和类型</h3><p>如果只是获取bitmap的大小和类型的话，可以通过设置<code>BitmapFactory.Options#inJustDecodeBounds</code>字段为<code>true</code>，然后再去解析<code>bitmap</code>。设置了这个属性之后，<code>BitmapFactory.decodeResource()</code>会返回一个值为<code>null</code>的<code>bitmap</code>，也就是说，这个方法并不会为<code>bitmap</code>分配内存空间，但是却可以获取到图片的宽高和类型。如以下代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">BitmapFactory.Options options = <span class="keyword">new</span> BitmapFactory.Options();</span><br><span class="line">options.inJustDecodeBounds = <span class="keyword">true</span>;<span class="comment">// 这个属性需要在decode之前设置</span></span><br><span class="line">BitmapFactory.decodeResource(getResources(), R.id.myimage, options);</span><br><span class="line"><span class="keyword">int</span> imageHeight = options.outHeight;</span><br><span class="line"><span class="keyword">int</span> imageWidth = options.outWidth;</span><br><span class="line">String imageType = options.outMimeType;</span><br></pre></td></tr></table></figure>
+<p>建议加载图片之前先计算下图片大小是否会引发OOM，除非你能确定图片大小不会占用很多内存。</p>
+<h3 id="加载按比例缩放的bitmap"><a href="#加载按比例缩放的bitmap" class="headerlink" title="加载按比例缩放的bitmap"></a>加载按比例缩放的bitmap</h3><p>经过上一个步骤我们已经获取到了图片的宽高和类型信息，这些信息可以用来决定是否加载完整的图片，否则的话，我们就要进行二级采样来代替原图，下面是一些需要考虑的因素：</p>
+<ul>
+<li>预估加载完整图片所占用的内存大小；</li>
+<li>加载这张图片到内存中时需要考虑应用的其他的内存需求；</li>
+<li>加载图片目标组件（ImageView）或者其他组件的大小；</li>
+<li>当前设备屏幕密度。</li>
+</ul>
+<p>例如，加载一张大分辨率的图片到一个显示缩略图的<code>ImageView</code>中，可以通过<code>inSampleSize</code>设置采样大小。比如设置<code>inSampleSize=4</code>表示加载bitmap宽高均为原图的1/4。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">calculateInSampleSize</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    BitmapFactory.Options options, <span class="keyword">int</span> reqWidth, <span class="keyword">int</span> reqHeight)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// Raw height and width of image</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> height = options.outHeight;</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> width = options.outWidth;</span><br><span class="line">    <span class="keyword">int</span> inSampleSize = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (height &gt; reqHeight || width &gt; reqWidth) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">final</span> <span class="keyword">int</span> halfHeight = height / <span class="number">2</span>;</span><br><span class="line">        <span class="keyword">final</span> <span class="keyword">int</span> halfWidth = width / <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Calculate the largest inSampleSize value that is a power of 2 and keeps both</span></span><br><span class="line">        <span class="comment">// height and width larger than the requested height and width.</span></span><br><span class="line">        <span class="keyword">while</span> ((halfHeight / inSampleSize) &gt;= reqHeight</span><br><span class="line">                &amp;&amp; (halfWidth / inSampleSize) &gt;= reqWidth) &#123;</span><br><span class="line">            inSampleSize *= <span class="number">2</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> inSampleSize;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面代码表示以2的指数为基准，获取最接近指定宽高的采样率。</p>
+<p>在使用上面方法之前，需要设置<code>inJustDecodeBounds</code>属性为<code>true</code>，在获取到宽高之后呢，再将其设置为<code>false</code>，然后再解码bitmap。代码如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Bitmap <span class="title">decodeSampledBitmapFromResource</span><span class="params">(Resources res, <span class="keyword">int</span> resId,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">int</span> reqWidth, <span class="keyword">int</span> reqHeight)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// First decode with inJustDecodeBounds=true to check dimensions</span></span><br><span class="line">    <span class="keyword">final</span> BitmapFactory.Options options = <span class="keyword">new</span> BitmapFactory.Options();</span><br><span class="line">    options.inJustDecodeBounds = <span class="keyword">true</span>;</span><br><span class="line">    BitmapFactory.decodeResource(res, resId, options);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Calculate inSampleSize</span></span><br><span class="line">    options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Decode bitmap with inSampleSize set</span></span><br><span class="line">    options.inJustDecodeBounds = <span class="keyword">false</span>;</span><br><span class="line">    <span class="keyword">return</span> BitmapFactory.decodeResource(res, resId, options);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>使用上面的方法就可以很方便的将bitmap加载到<code>ImageView</code>中并且以缩略图的方式显示出来，具体使用方式如下代码所示：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mImageView.setImageBitmap(decodeSampledBitmapFromResource(getResources(), R.id.myimage, <span class="number">100</span>, <span class="number">100</span>));</span><br></pre></td></tr></table></figure><br>你可以使用类似的方式去处理来自其他源的bitmap，无非就是替换掉对应的<code>BitmapFactory.decode*</code>方法。</p>
+<h2 id="不要在UI线程中处理Bitmap"><a href="#不要在UI线程中处理Bitmap" class="headerlink" title="不要在UI线程中处理Bitmap"></a>不要在UI线程中处理Bitmap</h2><p>在使用<code>BitmapFactory.decode*</code>加载网络或者磁盘上的图片的时候，由于多种因素，加载图片所用时间无法预知，如果在UI线程中去加载的话，往往会阻塞UI线程，极易造成应用程序无响应。因此本章节内容主要介绍使用后台异步任务加载bitmap。</p>
+<h3 id="使用AsyncTask"><a href="#使用AsyncTask" class="headerlink" title="使用AsyncTask"></a>使用AsyncTask</h3><p><code>AsyncTask</code>类为我们提供了一种很简单的方式去执行一些任务，并且可以把任务的执行结果发布到主线程中。要想使用这个类，我们先创建它的一个子类，并重写相关方法。示例代码如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">BitmapWorkerTask</span> <span class="keyword">extends</span> <span class="title">AsyncTask</span>&lt;<span class="title">Integer</span>, <span class="title">Void</span>, <span class="title">Bitmap</span>&gt; </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> WeakReference&lt;ImageView&gt; imageViewReference;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> data = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">BitmapWorkerTask</span><span class="params">(ImageView imageView)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// Use a WeakReference to ensure the ImageView can be garbage collected</span></span><br><span class="line">        imageViewReference = <span class="keyword">new</span> WeakReference&lt;ImageView&gt;(imageView);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Decode image in background.</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> Bitmap <span class="title">doInBackground</span><span class="params">(Integer... params)</span> </span>&#123;</span><br><span class="line">        data = params[<span class="number">0</span>];</span><br><span class="line">        <span class="comment">// 查看上一章节提供的方法</span></span><br><span class="line">        <span class="keyword">return</span> decodeSampledBitmapFromResource(getResources(), data, <span class="number">100</span>, <span class="number">100</span>));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Once complete, see if ImageView is still around and set bitmap.</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">onPostExecute</span><span class="params">(Bitmap bitmap)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (imageViewReference != <span class="keyword">null</span> &amp;&amp; bitmap != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">final</span> ImageView imageView = imageViewReference.get();</span><br><span class="line">            <span class="keyword">if</span> (imageView != <span class="keyword">null</span>) &#123;</span><br><span class="line">                imageView.setImageBitmap(bitmap);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>简单解释下上面的实例代码。使用<code>WeakReference</code>确保<code>ImageView</code>使用结束之后能被垃圾回收，在<code>onPostExecute</code>方法中对<code>imageView</code>作空值校验是因为我们并不能保证在执行<code>onPostExecute</code>的时候<code>ImageView</code>实例一直存在，如果后台任务完成之前配置发生变化比如切换屏幕方向，那么就有可能导致<code>ImageView</code>不在了。<br>使用下面代码开始这个异步任务：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">loadBitmap</span><span class="params">(<span class="keyword">int</span> resId, ImageView imageView)</span> </span>&#123;</span><br><span class="line">    BitmapWorkerTask task = <span class="keyword">new</span> BitmapWorkerTask(imageView);</span><br><span class="line">    task.execute(resId);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="处理并发"><a href="#处理并发" class="headerlink" title="处理并发"></a>处理并发</h3><p>android UI中一些公共组件如<code>ListView</code>和<code>GridView</code>等在结合上个小节演示的<code>AsyncTask</code>一起工作的时候会引入另外一个问题。为了节省内存空间，这些组件会在用户滑动控件的时候回收不可见的子视图。问题是不能保证在每一次子view执行<code>AsyncTask</code>完之后，它所关联的view能够被回收以便于显示下一个view，此外，也不能保证异步任务开始和结束顺序的一致性。<br>之前有一篇文章<a href="http://android-developers.blogspot.com/2010/07/multithreading-for-performance.html" target="_blank" rel="noopener">Multithreading For Performance</a>（这篇文章很早以前了啊）提供了一种解决方式，就是在<code>ImageView</code>保存了最近的<code>AsyncTask</code>引用，然后异步任务完成的时候再拿出来。我们可以使用类似的方式，将前面定义的<code>AsyncTask</code>改造成下面的模式。<br>首先创建一个<code>Drawable</code>的子类用于存储专门返回工作任务的引用，在这种情况下，可以使用<code>BitmapDrawable</code>作为任务完成后的显示在<code>ImageView</code>里的图像占位符。示例代码：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">AsyncDrawable</span> <span class="keyword">extends</span> <span class="title">BitmapDrawable</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> WeakReference&lt;BitmapWorkerTask&gt; bitmapWorkerTaskReference;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">AsyncDrawable</span><span class="params">(Resources res, Bitmap bitmap, BitmapWorkerTask bitmapWorkerTask)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>(res, bitmap);</span><br><span class="line">        bitmapWorkerTaskReference = <span class="keyword">new</span> WeakReference&lt;BitmapWorkerTask&gt;(bitmapWorkerTask);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> BitmapWorkerTask <span class="title">getBitmapWorkerTask</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> bitmapWorkerTaskReference.get();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>在执行<code>BitmapWorkerTask</code>之前，把创建好的<code>AsyncDrawable</code>绑定到目标<code>ImageView</code>上。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 这个算是上一节loadBitmap()方法的改进版</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">loadBitmap</span><span class="params">(<span class="keyword">int</span> resId, ImageView imageView)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (cancelPotentialWork(resId, imageView)) &#123;</span><br><span class="line">        <span class="keyword">final</span> BitmapWorkerTask task = <span class="keyword">new</span> BitmapWorkerTask(imageView);</span><br><span class="line">        <span class="keyword">final</span> AsyncDrawable asyncDrawable = <span class="keyword">new</span> AsyncDrawable(getResources(), mPlaceHolderBitmap, task);</span><br><span class="line">        imageView.setImageDrawable(asyncDrawable);</span><br><span class="line">        task.execute(resId);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>上面代码中<code>cancelPotentialWork()</code>这个方法的作用主要是判断目标<code>ImageView</code>是否已经关联了一个正在运行着不同的任务，如果是的话，就取消正在运行的任务。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">cancelPotentialWork</span><span class="params">(<span class="keyword">int</span> data, ImageView imageView)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> BitmapWorkerTask bitmapWorkerTask = getBitmapWorkerTask(imageView);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (bitmapWorkerTask != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">final</span> <span class="keyword">int</span> bitmapData = bitmapWorkerTask.data;</span><br><span class="line">        <span class="comment">// If bitmapData is not yet set or it differs from the new data</span></span><br><span class="line">        <span class="keyword">if</span> (bitmapData == <span class="number">0</span> || bitmapData != data) &#123;</span><br><span class="line">            <span class="comment">// Cancel previous task</span></span><br><span class="line">            bitmapWorkerTask.cancel(<span class="keyword">true</span>);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// The same work is already in progress</span></span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// No task associated with the ImageView, or an existing task was cancelled</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><code>getBitmapWorkerTask(imageView)</code>是个辅助方法，用于查询关联在<code>ImageView</code>上的任务。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> BitmapWorkerTask <span class="title">getBitmapWorkerTask</span><span class="params">(ImageView imageView)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">if</span> (imageView != <span class="keyword">null</span>) &#123;</span><br><span class="line">       <span class="comment">// 获取通过imageView.setImageDrawable(asyncDrawable);设置的drawable</span></span><br><span class="line">       <span class="keyword">final</span> Drawable drawable = imageView.getDrawable();</span><br><span class="line">       <span class="keyword">if</span> (drawable <span class="keyword">instanceof</span> AsyncDrawable) &#123;</span><br><span class="line">           <span class="keyword">final</span> AsyncDrawable asyncDrawable = (AsyncDrawable) drawable;</span><br><span class="line">           <span class="comment">// 获取关联的Task</span></span><br><span class="line">           <span class="keyword">return</span> asyncDrawable.getBitmapWorkerTask();</span><br><span class="line">       &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>最后一步就是修改下<code>BitmapWorkerTask</code>的<code>onPostExecute()</code>方法，判断当前执行的任务是否取消了或者是否匹配先前关联在<code>ImageView</code>上的任务。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">BitmapWorkerTask</span> <span class="keyword">extends</span> <span class="title">AsyncTask</span>&lt;<span class="title">Integer</span>, <span class="title">Void</span>, <span class="title">Bitmap</span>&gt; </span>&#123;</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">onPostExecute</span><span class="params">(Bitmap bitmap)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (isCancelled()) &#123;</span><br><span class="line">            bitmap = <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (imageViewReference != <span class="keyword">null</span> &amp;&amp; bitmap != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">final</span> ImageView imageView = imageViewReference.get();</span><br><span class="line">            <span class="keyword">final</span> BitmapWorkerTask bitmapWorkerTask = getBitmapWorkerTask(imageView);</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span> == bitmapWorkerTask &amp;&amp; imageView != <span class="keyword">null</span>) &#123;</span><br><span class="line">                imageView.setImageBitmap(bitmap);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>ok, <code>ListView</code>和<code>GridView</code>的问题解决了，现在你就可以直接使用<code>loadBitmap</code>方法了。例如，在<code>GridView</code>的<code>Adapter#getView()</code>方法中直接调用它就可以了。</p>
+<h2 id="缓存Bitmap"><a href="#缓存Bitmap" class="headerlink" title="缓存Bitmap"></a>缓存Bitmap</h2><p>直接使用缓存过的Bitmap要比重新加载Bitmap在UI上流畅的多，因此缓存就很有必要了啊。这里缓存主要分内存缓存和磁盘缓存来讲。</p>
+<h3 id="使用内存缓存"><a href="#使用内存缓存" class="headerlink" title="使用内存缓存"></a>使用内存缓存</h3><p>针对内存缓存算法，这里主要介绍LRU Cache（最近最少使用缓存淘汰算法，关于LRU cache，可以看<a href="http://flychao88.iteye.com/blog/1977653" target="_blank" rel="noopener">这篇</a>比较接地气的文章）。LRU特别适合用来缓存bitmap，保持最近使用对象在一个强引用的<code>LinkedHashMap</code>中，在缓存达到指定的容量的时候删除（evicting）最少使用的对象。  </p>
+<blockquote>
+<p>在过去，缓存Bitmap常用的实现是使用软/弱引用的方式，这种方式强烈<strong>不推荐</strong>。因为从2.3开始，GC对于软/弱引用对象的回收更加具有侵略性，导致这种方式失败。另外，在android 3.0以前，bitmap的数据是存放在native memory中的，而native memory的垃圾回收是不可控的，因为它不受GC的管理。有可能导致应用由于暂时超过内存限制引发崩溃。       </p>
+</blockquote>
+<p>为了给<code>LruCache</code>选择合适的大小，请考虑以下几个因素：</p>
+<ul>
+<li>其余Activity和Application的内存使用情况；</li>
+<li>一次性显示在屏幕上图片的数量和准备好随时显示在屏幕上图片的数量；</li>
+<li>设备屏幕大小和像素密度。在显示同样多图片的基础上高分屏需要更大的缓存空间；</li>
+<li>图片的尺寸信息和每张图片各自占用的内存情况</li>
+<li>图片被访问的频率，以及根据图片访问频率的不同可能需要对图片进行分组缓存</li>
+<li>图片的质量和数量的权衡。先存一堆低分辨率图片，然后再后台任务中再去加载高分辨率图片，这种方式有时更有用。</li>
+</ul>
+<p>关于<code>LruCache</code>的大小没有一个指定的准则，由有你去决定缓存大小。下面是一个代码示例：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> LruCache&lt;String, Bitmap&gt; mMemoryCache;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// Get max available VM memory, exceeding this amount will throw an</span></span><br><span class="line">    <span class="comment">// OutOfMemory exception. Stored in kilobytes as LruCache takes an</span></span><br><span class="line">    <span class="comment">// int in its constructor.</span></span><br><span class="line">    <span class="comment">// 虚拟机最大可用内存</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> maxMemory = (<span class="keyword">int</span>) (Runtime.getRuntime().maxMemory() / <span class="number">1024</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Use 1/8th of the available memory for this memory cache.</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> cacheSize = maxMemory / <span class="number">8</span>;</span><br><span class="line"></span><br><span class="line">    mMemoryCache = <span class="keyword">new</span> LruCache&lt;String, Bitmap&gt;(cacheSize) &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">protected</span> <span class="keyword">int</span> <span class="title">sizeOf</span><span class="params">(String key, Bitmap bitmap)</span> </span>&#123;</span><br><span class="line">            <span class="comment">// The cache size will be measured in kilobytes rather than</span></span><br><span class="line">            <span class="comment">// number of items.</span></span><br><span class="line">            <span class="keyword">return</span> bitmap.getByteCount() / <span class="number">1024</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">addBitmapToMemoryCache</span><span class="params">(String key, Bitmap bitmap)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (getBitmapFromMemCache(key) == <span class="keyword">null</span>) &#123;</span><br><span class="line">        mMemoryCache.put(key, bitmap);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> Bitmap <span class="title">getBitmapFromMemCache</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> mMemoryCache.get(key);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>说明：在上面程序中，应用可用内存的1/8分配给缓存，在hdpi的设备上，这个值大概4MB(8/32)。在充满图片的全屏的GridView控件中，在800<em>480分辨率下大概使用1.5MB(800</em>480*4)内存，所以，这个内存大概可以缓存2.5页的图片。</p>
+</blockquote>
+<p>下面是一个使用LRU缓存的示例程序：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">loadBitmap</span><span class="params">(<span class="keyword">int</span> resId, ImageView imageView)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> String imageKey = String.valueOf(resId);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 先从缓存中取图片，如果没有的话，则使用后台task去加载图片</span></span><br><span class="line">    <span class="keyword">final</span> Bitmap bitmap = getBitmapFromMemCache(imageKey);</span><br><span class="line">    <span class="keyword">if</span> (bitmap != <span class="keyword">null</span>) &#123;</span><br><span class="line">        mImageView.setImageBitmap(bitmap);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        mImageView.setImageResource(R.drawable.image_placeholder);</span><br><span class="line">        BitmapWorkerTask task = <span class="keyword">new</span> BitmapWorkerTask(mImageView);</span><br><span class="line">        task.execute(resId);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>这里用到的<code>BitmapWorkerTask</code>需要做一点变化:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">BitmapWorkerTask</span> <span class="keyword">extends</span> <span class="title">AsyncTask</span>&lt;<span class="title">Integer</span>, <span class="title">Void</span>, <span class="title">Bitmap</span>&gt; </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// Decode image in background.</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> Bitmap <span class="title">doInBackground</span><span class="params">(Integer... params)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> Bitmap bitmap = decodeSampledBitmapFromResource(</span><br><span class="line">                getResources(), params[<span class="number">0</span>], <span class="number">100</span>, <span class="number">100</span>));</span><br><span class="line">        <span class="comment">//加载完图片之后，将其添加到缓存里</span></span><br><span class="line">        addBitmapToMemoryCache(String.valueOf(params[<span class="number">0</span>]), bitmap);</span><br><span class="line">        <span class="keyword">return</span> bitmap;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="使用磁盘缓存"><a href="#使用磁盘缓存" class="headerlink" title="使用磁盘缓存"></a>使用磁盘缓存</h3><p>虽然使用内存缓存提高图片访问速度，但是由于内存容量有限，并且当应用处于后台的时候，内存缓存很容易被清理掉，当应用恢复的时候还得重复去处理图片，这个时候磁盘缓存就应运而生。使用磁盘可以持久化图片并且可以在内存缓存不可用的时候降低图片的装载次数，当然，从磁盘上获取图片肯定要比直接在内存中获取要慢，并且加载的过程也需要放到后台任务中去做，同样，从磁盘中读取图片的时间也是不可预知的。</p>
+<blockquote>
+<p>提示，如果访问图片的操作很频繁的话，<code>ContentProvider</code>更加适合用于存放缓存的图片。</p>
+</blockquote>
+<p>下面是一个磁盘缓存的示例程序：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> DiskLruCache mDiskLruCache;</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> Object mDiskCacheLock = <span class="keyword">new</span> Object();</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">boolean</span> mDiskCacheStarting = <span class="keyword">true</span>;</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> DISK_CACHE_SIZE = <span class="number">1024</span> * <span class="number">1024</span> * <span class="number">10</span>; <span class="comment">// 10MB</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String DISK_CACHE_SUBDIR = <span class="string">"thumbnails"</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// Initialize memory cache</span></span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// Initialize disk cache on background thread</span></span><br><span class="line">    File cacheDir = getDiskCacheDir(<span class="keyword">this</span>, DISK_CACHE_SUBDIR);</span><br><span class="line">    <span class="keyword">new</span> InitDiskCacheTask().execute(cacheDir);</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">InitDiskCacheTask</span> <span class="keyword">extends</span> <span class="title">AsyncTask</span>&lt;<span class="title">File</span>, <span class="title">Void</span>, <span class="title">Void</span>&gt; </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> Void <span class="title">doInBackground</span><span class="params">(File... params)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span> (mDiskCacheLock) &#123;</span><br><span class="line">            File cacheDir = params[<span class="number">0</span>];</span><br><span class="line">            mDiskLruCache = DiskLruCache.open(cacheDir, DISK_CACHE_SIZE);</span><br><span class="line">            mDiskCacheStarting = <span class="keyword">false</span>; <span class="comment">// Finished initialization</span></span><br><span class="line">            mDiskCacheLock.notifyAll(); <span class="comment">// Wake any waiting threads</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">BitmapWorkerTask</span> <span class="keyword">extends</span> <span class="title">AsyncTask</span>&lt;<span class="title">Integer</span>, <span class="title">Void</span>, <span class="title">Bitmap</span>&gt; </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// Decode image in background.</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> Bitmap <span class="title">doInBackground</span><span class="params">(Integer... params)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> String imageKey = String.valueOf(params[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Check disk cache in background thread</span></span><br><span class="line">        Bitmap bitmap = getBitmapFromDiskCache(imageKey);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (bitmap == <span class="keyword">null</span>) &#123; <span class="comment">// Not found in disk cache</span></span><br><span class="line">            <span class="comment">// Process as normal</span></span><br><span class="line">            <span class="keyword">final</span> Bitmap bitmap = decodeSampledBitmapFromResource(</span><br><span class="line">                    getResources(), params[<span class="number">0</span>], <span class="number">100</span>, <span class="number">100</span>));</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Add final bitmap to caches</span></span><br><span class="line">        addBitmapToCache(imageKey, bitmap);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> bitmap;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">addBitmapToCache</span><span class="params">(String key, Bitmap bitmap)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// Add to memory cache as before</span></span><br><span class="line">    <span class="keyword">if</span> (getBitmapFromMemCache(key) == <span class="keyword">null</span>) &#123;</span><br><span class="line">        mMemoryCache.put(key, bitmap);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Also add to disk cache</span></span><br><span class="line">    <span class="keyword">synchronized</span> (mDiskCacheLock) &#123;</span><br><span class="line">        <span class="keyword">if</span> (mDiskLruCache != <span class="keyword">null</span> &amp;&amp; mDiskLruCache.get(key) == <span class="keyword">null</span>) &#123;</span><br><span class="line">            mDiskLruCache.put(key, bitmap);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> Bitmap <span class="title">getBitmapFromDiskCache</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span> (mDiskCacheLock) &#123;</span><br><span class="line">        <span class="comment">// Wait while disk cache is started from background thread</span></span><br><span class="line">        <span class="comment">// 等待直到DiskCache初始化结束</span></span><br><span class="line">        <span class="keyword">while</span> (mDiskCacheStarting) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                mDiskCacheLock.wait();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;&#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (mDiskLruCache != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> mDiskLruCache.get(key);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Creates a unique subdirectory of the designated app cache directory. Tries to use external</span></span><br><span class="line"><span class="comment">// but if not mounted, falls back on internal storage.</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> File <span class="title">getDiskCacheDir</span><span class="params">(Context context, String uniqueName)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// Check if media is mounted or storage is built-in, if so, try and use external cache dir</span></span><br><span class="line">    <span class="comment">// otherwise use internal cache dir</span></span><br><span class="line">    <span class="comment">// 如果有SD卡的话使用SD卡作为缓存路径</span></span><br><span class="line">    <span class="keyword">final</span> String cachePath =</span><br><span class="line">            Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState()) ||</span><br><span class="line">                    !isExternalStorageRemovable() ? getExternalCacheDir(context).getPath() :</span><br><span class="line">                            context.getCacheDir().getPath();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> File(cachePath + File.separator + uniqueName);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>使用内存缓存获取图片的操作是在主线程中，而使用磁盘缓存读取图片的操作是在后台任务中，对磁盘的操作绝对不要放到主线程中去做，对图片缓存的时候需要同时将图片缓存到内存和磁盘中。</p>
+<h3 id="处理配置更改"><a href="#处理配置更改" class="headerlink" title="处理配置更改"></a>处理配置更改</h3><p>主要针对运行时用户配置发生变化时的处理情况，如屏幕旋转操作。下面一个程序示例使用了<code>Fragment</code>特性<code>setRetainInstance()</code>获取缓存对象的操作，这个用法很巧妙啊。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> LruCache&lt;String, Bitmap&gt; mMemoryCache;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    RetainFragment retainFragment =</span><br><span class="line">            RetainFragment.findOrCreateRetainFragment(getFragmentManager());</span><br><span class="line">    mMemoryCache = retainFragment.mRetainedCache; <span class="comment">//对缓存做恢复操作</span></span><br><span class="line">    <span class="keyword">if</span> (mMemoryCache == <span class="keyword">null</span>) &#123;</span><br><span class="line">        mMemoryCache = <span class="keyword">new</span> LruCache&lt;String, Bitmap&gt;(cacheSize) &#123;</span><br><span class="line">            ... <span class="comment">// Initialize cache here as usual</span></span><br><span class="line">        &#125;</span><br><span class="line">        retainFragment.mRetainedCache = mMemoryCache;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">RetainFragment</span> <span class="keyword">extends</span> <span class="title">Fragment</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String TAG = <span class="string">"RetainFragment"</span>;</span><br><span class="line">    <span class="keyword">public</span> LruCache&lt;String, Bitmap&gt; mRetainedCache;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">RetainFragment</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> RetainFragment <span class="title">findOrCreateRetainFragment</span><span class="params">(FragmentManager fm)</span> </span>&#123;</span><br><span class="line">        RetainFragment fragment = (RetainFragment) fm.findFragmentByTag(TAG);</span><br><span class="line">        <span class="keyword">if</span> (fragment == <span class="keyword">null</span>) &#123;</span><br><span class="line">            fragment = <span class="keyword">new</span> RetainFragment();</span><br><span class="line">            fm.beginTransaction().add(fragment, TAG).commit();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> fragment;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.onCreate(savedInstanceState);</span><br><span class="line">        setRetainInstance(<span class="keyword">true</span>); <span class="comment">//设置这个属性可以在activity重新重建的时候获取先前的fragment</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="Bitmap内存管理"><a href="#Bitmap内存管理" class="headerlink" title="Bitmap内存管理"></a>Bitmap内存管理</h2><p>紧接着上面的章节，android给出了一些有利于垃圾回收和bitmap重用的建议，这些建议和你的app的target API版本有关。</p>
+<blockquote>
+<ul>
+<li>在2.2及其之前的版本中，当发生gc的时候，会挂起app所有的线程（感觉整个世界都停了），引发卡顿并且降低性能。而在2.3的时候，增加了并发gc的机制，也就意味着在bitmap不在被引用的时候，它所占用的内存可以及时回收；</li>
+<li>在2.3.3及其之前的版本中，bitmap的像素数据是存放到native memory中的，这和存放到dalvik heap中的bitmap对象本身是分开的。由于存放到native memory中的数据释放时机是不可控的（不受GC的管理），有可能触发低内存限制导致崩溃。而在3.0的时候，bitmap的像素数据也存放到dalvik heap中，并且和bitmap对象关联起来。</li>
+</ul>
+</blockquote>
+<p>针对以上情况，下面也要对不同的android版本进行分开描述。</p>
+<h3 id="2-3-3-及其之前版本的内存管理"><a href="#2-3-3-及其之前版本的内存管理" class="headerlink" title="2.3.3 及其之前版本的内存管理"></a>2.3.3 及其之前版本的内存管理</h3><p>在2.3.3及之前版本建议在不使用bitmap的时候调用<code>recyle()</code>方法进行回收，如果加载大量bitmap在你的应用中，极易引发OOM，<code>recyle()</code>方法能够使app尽量回收不用内存。</p>
+<blockquote>
+<p>需要注意的是：一定要在你确定bitmap不在被使用的时候调用<code>recyle()</code>方法，否则的话会导致以下错误：<code>&quot;Canvas: trying to use a recycled bitmap&quot;</code>。</p>
+</blockquote>
+<p>下面的代码片段使用了引用计数的方式来确定显示和缓存的bitmap，当满足下面两个条件的时候，bitmap会被回收：</p>
+<ul>
+<li>引用计数变量<code>mDisplayRefCount</code>和<code>mCacheRefCount</code>的值同时为0；</li>
+<li>bitmap不为<code>null</code>并且未被回收。</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">int</span> mCacheRefCount = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">int</span> mDisplayRefCount = <span class="number">0</span>;</span><br><span class="line">...</span><br><span class="line"><span class="comment">// Notify the drawable that the displayed state has changed.</span></span><br><span class="line"><span class="comment">// Keep a count to determine when the drawable is no longer displayed.</span></span><br><span class="line"><span class="comment">// 图像的显示状态发生变化的时候被调用。</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setIsDisplayed</span><span class="params">(<span class="keyword">boolean</span> isDisplayed)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (isDisplayed) &#123;</span><br><span class="line">            mDisplayRefCount++;</span><br><span class="line">            mHasBeenDisplayed = <span class="keyword">true</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            mDisplayRefCount--;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// Check to see if recycle() can be called.</span></span><br><span class="line">    checkState();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Notify the drawable that the cache state has changed.</span></span><br><span class="line"><span class="comment">// Keep a count to determine when the drawable is no longer being cached.</span></span><br><span class="line"><span class="comment">// 图像缓存状态变化的时候被调用</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setIsCached</span><span class="params">(<span class="keyword">boolean</span> isCached)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (isCached) &#123;</span><br><span class="line">            mCacheRefCount++;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            mCacheRefCount--;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// Check to see if recycle() can be called.</span></span><br><span class="line">    checkState();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 每一次图片状态发生变化的时候被调用</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">checkState</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// If the drawable cache and display ref counts = 0, and this drawable</span></span><br><span class="line">    <span class="comment">// has been displayed, then recycle.</span></span><br><span class="line">    <span class="keyword">if</span> (mCacheRefCount &lt;= <span class="number">0</span> &amp;&amp; mDisplayRefCount &lt;= <span class="number">0</span> &amp;&amp; mHasBeenDisplayed</span><br><span class="line">            &amp;&amp; hasValidBitmap()) &#123;</span><br><span class="line">        getBitmap().recycle();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 检验bitmap的有效性</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">synchronized</span> <span class="keyword">boolean</span> <span class="title">hasValidBitmap</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Bitmap bitmap = getBitmap();</span><br><span class="line">    <span class="keyword">return</span> bitmap != <span class="keyword">null</span> &amp;&amp; !bitmap.isRecycled();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Android-3-0-及之后版本内存管理"><a href="#Android-3-0-及之后版本内存管理" class="headerlink" title="Android 3.0 及之后版本内存管理"></a>Android 3.0 及之后版本内存管理</h3><p>在Android 3.0版本引入了<code>BitmapFactory.Options.inBitmap</code>字段，设置了这个字段之后，在对bitmap解码的时候会对已有bitmap数据内容进行重用。这儿有个限制，在4.4版本以前，只支持jpeg或者png格式的图片，并且bitmap的图片大小必须相同。而在4.4之后，只要保证原<code>inBitmap</code>不小于将要加载的bitmap大小即可。具体细节可以参考<a href="https://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inBitmap" target="_blank" rel="noopener">inBitmap</a>。</p>
+<h4 id="保存bitmap为以后使用"><a href="#保存bitmap为以后使用" class="headerlink" title="保存bitmap为以后使用"></a>保存bitmap为以后使用</h4><p>下面的代码片段示范了app运行在Android 3.0及以上版本的时候，当bitmap从<code>LruCache</code>缓存移除的时候，将会在<code>HashSet</code>保存这个bitmap的软引用，以便后面的重用。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">Set&lt;SoftReference&lt;Bitmap&gt;&gt; mReusableBitmaps;</span><br><span class="line"><span class="keyword">private</span> LruCache&lt;String, BitmapDrawable&gt; mMemoryCache;</span><br><span class="line"></span><br><span class="line"><span class="comment">// If you're running on Honeycomb or newer, create a</span></span><br><span class="line"><span class="comment">// synchronized HashSet of references to reusable bitmaps.</span></span><br><span class="line"><span class="keyword">if</span> (Utils.hasHoneycomb()) &#123;</span><br><span class="line">    mReusableBitmaps =</span><br><span class="line">            Collections.synchronizedSet(<span class="keyword">new</span> HashSet&lt;SoftReference&lt;Bitmap&gt;&gt;());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">mMemoryCache = <span class="keyword">new</span> LruCache&lt;String, BitmapDrawable&gt;(mCacheParams.memCacheSize) &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Notify the removed entry that is no longer being cached.</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">entryRemoved</span><span class="params">(<span class="keyword">boolean</span> evicted, String key,</span></span></span><br><span class="line"><span class="function"><span class="params">            BitmapDrawable oldValue, BitmapDrawable newValue)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (RecyclingBitmapDrawable<span class="class">.<span class="keyword">class</span>.<span class="title">isInstance</span>(<span class="title">oldValue</span>)) </span>&#123;</span><br><span class="line">            <span class="comment">// The removed entry is a recycling drawable, so notify it</span></span><br><span class="line">            <span class="comment">// that it has been removed from the memory cache.</span></span><br><span class="line">            ((RecyclingBitmapDrawable) oldValue).setIsCached(<span class="keyword">false</span>);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// The removed entry is a standard BitmapDrawable.</span></span><br><span class="line">            <span class="keyword">if</span> (Utils.hasHoneycomb()) &#123;</span><br><span class="line">                <span class="comment">// We're running on Honeycomb or later, so add the bitmap</span></span><br><span class="line">                <span class="comment">// to a SoftReference set for possible use with inBitmap later.</span></span><br><span class="line">                mReusableBitmaps.add</span><br><span class="line">                        (<span class="keyword">new</span> SoftReference&lt;Bitmap&gt;(oldValue.getBitmap()));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">....</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h4 id="使用已有的bitmap"><a href="#使用已有的bitmap" class="headerlink" title="使用已有的bitmap"></a>使用已有的bitmap</h4><p>正在运行的app的时候会查看是否有可用bitmap可供decode*方法使用。例如以下代码:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Bitmap <span class="title">decodeSampledBitmapFromFile</span><span class="params">(String filename,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">int</span> reqWidth, <span class="keyword">int</span> reqHeight, ImageCache cache)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">final</span> BitmapFactory.Options options = <span class="keyword">new</span> BitmapFactory.Options();</span><br><span class="line">    ...</span><br><span class="line">    BitmapFactory.decodeFile(filename, options);</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="comment">// If we're running on Honeycomb or newer, try to use inBitmap.</span></span><br><span class="line">    <span class="keyword">if</span> (Utils.hasHoneycomb()) &#123;</span><br><span class="line">        addInBitmapOptions(options, cache);</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">return</span> BitmapFactory.decodeFile(filename, options);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><code>addInBitmapOptions()</code>方法的实现如下:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">addInBitmapOptions</span><span class="params">(BitmapFactory.Options options,</span></span></span><br><span class="line"><span class="function"><span class="params">        ImageCache cache)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// inBitmap only works with mutable bitmaps, so force the decoder to</span></span><br><span class="line">    <span class="comment">// return mutable bitmaps.</span></span><br><span class="line">    options.inMutable = <span class="keyword">true</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (cache != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">// Try to find a bitmap to use for inBitmap.</span></span><br><span class="line">        Bitmap inBitmap = cache.getBitmapFromReusableSet(options);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (inBitmap != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="comment">// If a suitable bitmap has been found, set it as the value of</span></span><br><span class="line">            <span class="comment">// inBitmap.</span></span><br><span class="line">            options.inBitmap = inBitmap;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// This method iterates through the reusable bitmaps, looking for one</span></span><br><span class="line"><span class="comment">// to use for inBitmap:</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> Bitmap <span class="title">getBitmapFromReusableSet</span><span class="params">(BitmapFactory.Options options)</span> </span>&#123;</span><br><span class="line">        Bitmap bitmap = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (mReusableBitmaps != <span class="keyword">null</span> &amp;&amp; !mReusableBitmaps.isEmpty()) &#123;</span><br><span class="line">        <span class="keyword">synchronized</span> (mReusableBitmaps) &#123;</span><br><span class="line">            <span class="keyword">final</span> Iterator&lt;SoftReference&lt;Bitmap&gt;&gt; iterator</span><br><span class="line">                    = mReusableBitmaps.iterator();</span><br><span class="line">            Bitmap item;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">while</span> (iterator.hasNext()) &#123;</span><br><span class="line">                item = iterator.next().get();</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> (<span class="keyword">null</span> != item &amp;&amp; item.isMutable()) &#123;</span><br><span class="line">                    <span class="comment">// Check to see it the item can be used for inBitmap.</span></span><br><span class="line">                    <span class="keyword">if</span> (canUseForInBitmap(item, options)) &#123;</span><br><span class="line">                        bitmap = item;</span><br><span class="line"></span><br><span class="line">                        <span class="comment">// Remove from reusable set so it can't be used again.</span></span><br><span class="line">                        iterator.remove();</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// Remove from the set if the reference has been cleared.</span></span><br><span class="line">                    iterator.remove();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> bitmap;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">canUseForInBitmap</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        Bitmap candidate, BitmapFactory.Options targetOptions)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (Build.VERSION.SDK_INT &gt;= Build.VERSION_CODES.KITKAT) &#123;</span><br><span class="line">        <span class="comment">// From Android 4.4 (KitKat) onward we can re-use if the byte size of</span></span><br><span class="line">        <span class="comment">// the new bitmap is smaller than the reusable bitmap candidate</span></span><br><span class="line">        <span class="comment">// allocation byte count.</span></span><br><span class="line">        <span class="comment">// 在4.4及其以后的版本中只要保证原inBitmap的大小大于新的bitmap大小就可以了</span></span><br><span class="line">        <span class="keyword">int</span> width = targetOptions.outWidth / targetOptions.inSampleSize;</span><br><span class="line">        <span class="keyword">int</span> height = targetOptions.outHeight / targetOptions.inSampleSize;</span><br><span class="line">        <span class="keyword">int</span> byteCount = width * height * getBytesPerPixel(candidate.getConfig());</span><br><span class="line">        <span class="keyword">return</span> byteCount &lt;= candidate.getAllocationByteCount();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// On earlier versions, the dimensions must match exactly and the inSampleSize must be 1</span></span><br><span class="line">    <span class="comment">// 而在早期版本中必须要求原bitmap大小和新bitmap的大小一致并且inSampleSize的值必须为1</span></span><br><span class="line">    <span class="keyword">return</span> candidate.getWidth() == targetOptions.outWidth</span><br><span class="line">            &amp;&amp; candidate.getHeight() == targetOptions.outHeight</span><br><span class="line">            &amp;&amp; targetOptions.inSampleSize == <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * A helper function to return the byte usage per pixel of a bitmap based on its configuration.</span></span><br><span class="line"><span class="comment"> * 辅助函数，表示在不同的颜色位数情况下单个像素所占空间大小</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">getBytesPerPixel</span><span class="params">(Config config)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (config == Config.ARGB_8888) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">4</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (config == Config.RGB_565) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">2</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (config == Config.ARGB_4444) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">2</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (config == Config.ALPHA_8) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="在界面上显示Bitmap"><a href="#在界面上显示Bitmap" class="headerlink" title="在界面上显示Bitmap"></a>在界面上显示Bitmap</h2><p>这个小节结合之前的内容介绍下在并发或者配置发生变化的情况下，使用<code>ViewPager</code>或者<code>GridView</code>组件的时候，利用后台线程加载bitmap和对bitmap进行缓存。</p>
+<h3 id="在ViewPager中加载Bitmap的实现"><a href="#在ViewPager中加载Bitmap的实现" class="headerlink" title="在ViewPager中加载Bitmap的实现"></a>在ViewPager中加载Bitmap的实现</h3><p><code>FragmentStatePagerAdapter</code>是一种比<code>PagerAdapter</code>更好的适配器。它能够在离开屏幕的时候自动销毁和保存<code>Fragment</code>的状态，从而降低内存使用率。<br>下面是一个持有<code>ImageView</code>的<code>ViewPager</code>的实现方式，<code>MainActivity</code>持有<code>ViewPager</code>及其<code>adapter</code>。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ImageDetailActivity</span> <span class="keyword">extends</span> <span class="title">FragmentActivity</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String EXTRA_IMAGE = <span class="string">"extra_image"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> ImagePagerAdapter mAdapter;</span><br><span class="line">    <span class="keyword">private</span> ViewPager mPager;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// A static dataset to back the ViewPager adapter</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">static</span> Integer[] imageResIds = <span class="keyword">new</span> Integer[] &#123;</span><br><span class="line">            R.drawable.sample_image_1, R.drawable.sample_image_2, R.drawable.sample_image_3,</span><br><span class="line">            R.drawable.sample_image_4, R.drawable.sample_image_5, R.drawable.sample_image_6,</span><br><span class="line">            R.drawable.sample_image_7, R.drawable.sample_image_8, R.drawable.sample_image_9&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.onCreate(savedInstanceState);</span><br><span class="line">        setContentView(R.layout.image_detail_pager); <span class="comment">// Contains just a ViewPager</span></span><br><span class="line"></span><br><span class="line">        mAdapter = <span class="keyword">new</span> ImagePagerAdapter(getSupportFragmentManager(), imageResIds.length);</span><br><span class="line">        mPager = (ViewPager) findViewById(R.id.pager);</span><br><span class="line">        mPager.setAdapter(mAdapter);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">ImagePagerAdapter</span> <span class="keyword">extends</span> <span class="title">FragmentStatePagerAdapter</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> mSize;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="title">ImagePagerAdapter</span><span class="params">(FragmentManager fm, <span class="keyword">int</span> size)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">super</span>(fm);</span><br><span class="line">            mSize = size;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getCount</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> mSize;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> Fragment <span class="title">getItem</span><span class="params">(<span class="keyword">int</span> position)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> ImageDetailFragment.newInstance(position);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>下面是一个初级的<code>ImageDetailFragment</code>：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ImageDetailFragment</span> <span class="keyword">extends</span> <span class="title">Fragment</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String IMAGE_DATA_EXTRA = <span class="string">"resId"</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> mImageNum;</span><br><span class="line">    <span class="keyword">private</span> ImageView mImageView;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">static</span> ImageDetailFragment <span class="title">newInstance</span><span class="params">(<span class="keyword">int</span> imageNum)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> ImageDetailFragment f = <span class="keyword">new</span> ImageDetailFragment();</span><br><span class="line">        <span class="keyword">final</span> Bundle args = <span class="keyword">new</span> Bundle();</span><br><span class="line">        args.putInt(IMAGE_DATA_EXTRA, imageNum);</span><br><span class="line">        f.setArguments(args);</span><br><span class="line">        <span class="keyword">return</span> f;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Empty constructor, required as per Fragment docs</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ImageDetailFragment</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.onCreate(savedInstanceState);</span><br><span class="line">        mImageNum = getArguments() != <span class="keyword">null</span> ? getArguments().getInt(IMAGE_DATA_EXTRA) : -<span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> View <span class="title">onCreateView</span><span class="params">(LayoutInflater inflater, ViewGroup container,</span></span></span><br><span class="line"><span class="function"><span class="params">            Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// image_detail_fragment.xml contains just an ImageView</span></span><br><span class="line">        <span class="keyword">final</span> View v = inflater.inflate(R.layout.image_detail_fragment, container, <span class="keyword">false</span>);</span><br><span class="line">        mImageView = (ImageView) v.findViewById(R.id.imageView);</span><br><span class="line">        <span class="keyword">return</span> v;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onActivityCreated</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.onActivityCreated(savedInstanceState);</span><br><span class="line">        <span class="keyword">final</span> <span class="keyword">int</span> resId = ImageDetailActivity.imageResIds[mImageNum];</span><br><span class="line">        mImageView.setImageResource(resId); <span class="comment">// Load image into ImageView</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>估计你也注意到了，在上面的代码中加载image的时候是在UI线程中去加载的。根据前面讲到的，在UI线程中处理图片并不可取，所以我们要将其放到后台线程中去处理。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ImageDetailActivity</span> <span class="keyword">extends</span> <span class="title">FragmentActivity</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">loadBitmap</span><span class="params">(<span class="keyword">int</span> resId, ImageView imageView)</span> </span>&#123;</span><br><span class="line">        mImageView.setImageResource(R.drawable.image_placeholder);</span><br><span class="line">        BitmapWorkerTask task = <span class="keyword">new</span> BitmapWorkerTask(mImageView);</span><br><span class="line">        task.execute(resId);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ... <span class="comment">// 这儿可以参考前面章节中的BitmapWorkerTask</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ImageDetailFragment</span> <span class="keyword">extends</span> <span class="title">Fragment</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onActivityCreated</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.onActivityCreated(savedInstanceState);</span><br><span class="line">        <span class="keyword">if</span> (ImageDetailActivity<span class="class">.<span class="keyword">class</span>.<span class="title">isInstance</span>(<span class="title">getActivity</span>())) </span>&#123;</span><br><span class="line">            <span class="keyword">final</span> <span class="keyword">int</span> resId = ImageDetailActivity.imageResIds[mImageNum];</span><br><span class="line">            <span class="comment">// Call out to ImageDetailActivity to load the bitmap in a background thread</span></span><br><span class="line">            ((ImageDetailActivity) getActivity()).loadBitmap(resId, mImageView);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>对图片的处理比如设置大小或者从网络中加载图片等都可以放到后台线程中而不会影响UI，这儿也可以在后台线程中对图片进行缓存处理。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ImageDetailActivity</span> <span class="keyword">extends</span> <span class="title">FragmentActivity</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">private</span> LruCache&lt;String, Bitmap&gt; mMemoryCache;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">        ...</span><br><span class="line">        <span class="comment">// 这儿可以参考之前讲到的内存缓存</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">loadBitmap</span><span class="params">(<span class="keyword">int</span> resId, ImageView imageView)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> String imageKey = String.valueOf(resId);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">final</span> Bitmap bitmap = mMemoryCache.get(imageKey);</span><br><span class="line">        <span class="keyword">if</span> (bitmap != <span class="keyword">null</span>) &#123;</span><br><span class="line">            mImageView.setImageBitmap(bitmap);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// 先显示一张正在占位图片，然后再后台去加载真正的图片</span></span><br><span class="line">            mImageView.setImageResource(R.drawable.image_placeholder);</span><br><span class="line">            BitmapWorkerTask task = <span class="keyword">new</span> BitmapWorkerTask(mImageView);</span><br><span class="line">            task.execute(resId);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ... <span class="comment">// 其他代码参考缓存那节</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="在GridView中加载Bitmap的实现"><a href="#在GridView中加载Bitmap的实现" class="headerlink" title="在GridView中加载Bitmap的实现"></a>在GridView中加载Bitmap的实现</h3><p>和在<code>VIewPager</code>中一样，一个比较常见的实现方式如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ImageGridFragment</span> <span class="keyword">extends</span> <span class="title">Fragment</span> <span class="keyword">implements</span> <span class="title">AdapterView</span>.<span class="title">OnItemClickListener</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> ImageAdapter mAdapter;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// A static dataset to back the GridView adapter</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">static</span> Integer[] imageResIds = <span class="keyword">new</span> Integer[] &#123;</span><br><span class="line">            R.drawable.sample_image_1, R.drawable.sample_image_2, R.drawable.sample_image_3,</span><br><span class="line">            R.drawable.sample_image_4, R.drawable.sample_image_5, R.drawable.sample_image_6,</span><br><span class="line">            R.drawable.sample_image_7, R.drawable.sample_image_8, R.drawable.sample_image_9&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Empty constructor as per Fragment docs</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ImageGridFragment</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.onCreate(savedInstanceState);</span><br><span class="line">        mAdapter = <span class="keyword">new</span> ImageAdapter(getActivity());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> View <span class="title">onCreateView</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">            LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> View v = inflater.inflate(R.layout.image_grid_fragment, container, <span class="keyword">false</span>);</span><br><span class="line">        <span class="keyword">final</span> GridView mGridView = (GridView) v.findViewById(R.id.gridView);</span><br><span class="line">        mGridView.setAdapter(mAdapter);</span><br><span class="line">        mGridView.setOnItemClickListener(<span class="keyword">this</span>);</span><br><span class="line">        <span class="keyword">return</span> v;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onItemClick</span><span class="params">(AdapterView&lt;?&gt; parent, View v, <span class="keyword">int</span> position, <span class="keyword">long</span> id)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> Intent i = <span class="keyword">new</span> Intent(getActivity(), ImageDetailActivity<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">        i.putExtra(ImageDetailActivity.EXTRA_IMAGE, position);</span><br><span class="line">        startActivity(i);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="class"><span class="keyword">class</span> <span class="title">ImageAdapter</span> <span class="keyword">extends</span> <span class="title">BaseAdapter</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">final</span> Context mContext;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="title">ImageAdapter</span><span class="params">(Context context)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">super</span>();</span><br><span class="line">            mContext = context;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getCount</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> imageResIds.length;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> Object <span class="title">getItem</span><span class="params">(<span class="keyword">int</span> position)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> imageResIds[position];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">getItemId</span><span class="params">(<span class="keyword">int</span> position)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> position;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> View <span class="title">getView</span><span class="params">(<span class="keyword">int</span> position, View convertView, ViewGroup container)</span> </span>&#123;</span><br><span class="line">            ImageView imageView;</span><br><span class="line">            <span class="keyword">if</span> (convertView == <span class="keyword">null</span>) &#123; <span class="comment">// if it's not recycled, initialize some attributes</span></span><br><span class="line">                imageView = <span class="keyword">new</span> ImageView(mContext);</span><br><span class="line">                imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);</span><br><span class="line">                imageView.setLayoutParams(<span class="keyword">new</span> GridView.LayoutParams(</span><br><span class="line">                        LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                imageView = (ImageView) convertView;</span><br><span class="line">            &#125;</span><br><span class="line">            imageView.setImageResource(imageResIds[position]); <span class="comment">// Load image into ImageView</span></span><br><span class="line">            <span class="keyword">return</span> imageView;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>和之前问题类似，同样是在UI线程中加载图片，这儿也可以使用异步任务的方式去处理，但是要小心<code>GridView</code>在回收子View的时候引起的并发问题。下面是更新之后的代码:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ImageGridFragment</span> <span class="keyword">extends</span> <span class="title">Fragment</span> <span class="keyword">implements</span> <span class="title">AdapterView</span>.<span class="title">OnItemClickListener</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="class"><span class="keyword">class</span> <span class="title">ImageAdapter</span> <span class="keyword">extends</span> <span class="title">BaseAdapter</span> </span>&#123;</span><br><span class="line">        ...</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> View <span class="title">getView</span><span class="params">(<span class="keyword">int</span> position, View convertView, ViewGroup container)</span> </span>&#123;</span><br><span class="line">            ...</span><br><span class="line">            loadBitmap(imageResIds[position], imageView)</span><br><span class="line">            <span class="keyword">return</span> imageView;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">loadBitmap</span><span class="params">(<span class="keyword">int</span> resId, ImageView imageView)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (cancelPotentialWork(resId, imageView)) &#123;</span><br><span class="line">            <span class="keyword">final</span> BitmapWorkerTask task = <span class="keyword">new</span> BitmapWorkerTask(imageView);</span><br><span class="line">            <span class="keyword">final</span> AsyncDrawable asyncDrawable =</span><br><span class="line">                    <span class="keyword">new</span> AsyncDrawable(getResources(), mPlaceHolderBitmap, task);</span><br><span class="line">            imageView.setImageDrawable(asyncDrawable);</span><br><span class="line">            task.execute(resId);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">AsyncDrawable</span> <span class="keyword">extends</span> <span class="title">BitmapDrawable</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">final</span> WeakReference&lt;BitmapWorkerTask&gt; bitmapWorkerTaskReference;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="title">AsyncDrawable</span><span class="params">(Resources res, Bitmap bitmap,</span></span></span><br><span class="line"><span class="function"><span class="params">                BitmapWorkerTask bitmapWorkerTask)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">super</span>(res, bitmap);</span><br><span class="line">            bitmapWorkerTaskReference =</span><br><span class="line">                <span class="keyword">new</span> WeakReference&lt;BitmapWorkerTask&gt;(bitmapWorkerTask);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> BitmapWorkerTask <span class="title">getBitmapWorkerTask</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> bitmapWorkerTaskReference.get();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">cancelPotentialWork</span><span class="params">(<span class="keyword">int</span> data, ImageView imageView)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> BitmapWorkerTask bitmapWorkerTask = getBitmapWorkerTask(imageView);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (bitmapWorkerTask != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">final</span> <span class="keyword">int</span> bitmapData = bitmapWorkerTask.data;</span><br><span class="line">            <span class="keyword">if</span> (bitmapData != data) &#123;</span><br><span class="line">                <span class="comment">// Cancel previous task</span></span><br><span class="line">                bitmapWorkerTask.cancel(<span class="keyword">true</span>);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">// The same work is already in progress</span></span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// No task associated with the ImageView, or an existing task was cancelled</span></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> BitmapWorkerTask <span class="title">getBitmapWorkerTask</span><span class="params">(ImageView imageView)</span> </span>&#123;</span><br><span class="line">       <span class="keyword">if</span> (imageView != <span class="keyword">null</span>) &#123;</span><br><span class="line">           <span class="keyword">final</span> Drawable drawable = imageView.getDrawable();</span><br><span class="line">           <span class="keyword">if</span> (drawable <span class="keyword">instanceof</span> AsyncDrawable) &#123;</span><br><span class="line">               <span class="keyword">final</span> AsyncDrawable asyncDrawable = (AsyncDrawable) drawable;</span><br><span class="line">               <span class="keyword">return</span> asyncDrawable.getBitmapWorkerTask();</span><br><span class="line">           &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ... <span class="comment">// include updated BitmapWorkerTask class</span></span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>提示：这一套代码也可以用于<code>ListView</code><br>相信在看完这篇教程之后，你能够更好的处理bitmap了吧。</p>
+</blockquote>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/android/" rel="tag"># android</a>
+          
+            <a href="/tags/bitmap/" rel="tag"># bitmap</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/07/14/effective-java-%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0-%E7%B1%BB%E5%9E%8B%E5%AE%89%E5%85%A8%E7%9A%84%E5%BC%82%E6%9E%84%E5%AE%B9%E5%99%A8/" rel="next" title="effective java 读书笔记--类型安全的异构容器">
+                <i class="fa fa-chevron-left"></i> effective java 读书笔记--类型安全的异构容器
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/10/26/%E6%9C%8D%E5%8A%A1%E6%8F%90%E4%BE%9B%E8%80%85%E6%A1%86%E6%9E%B6/" rel="prev" title="服务提供者框架">
+                服务提供者框架 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/images/avatar.jfif"
+                alt="xiaofei" />
+            
+              <p class="site-author-name" itemprop="name">xiaofei</p>
+              <p class="site-description motion-element" itemprop="description">个人博客</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives%7C%7C%20archives">
+              
+                  <span class="site-state-item-count">11</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/xiaofeiMophsic" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/5726725" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-inline">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                Links
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://www.wubin.design/" title="Bruce.Bin" target="_blank">Bruce.Bin</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#高效加载大Bitmap"><span class="nav-number">2.</span> <span class="nav-text">高效加载大Bitmap</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#获取Bitmap的大小和类型"><span class="nav-number">2.1.</span> <span class="nav-text">获取Bitmap的大小和类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#加载按比例缩放的bitmap"><span class="nav-number">2.2.</span> <span class="nav-text">加载按比例缩放的bitmap</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#不要在UI线程中处理Bitmap"><span class="nav-number">3.</span> <span class="nav-text">不要在UI线程中处理Bitmap</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#使用AsyncTask"><span class="nav-number">3.1.</span> <span class="nav-text">使用AsyncTask</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#处理并发"><span class="nav-number">3.2.</span> <span class="nav-text">处理并发</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#缓存Bitmap"><span class="nav-number">4.</span> <span class="nav-text">缓存Bitmap</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#使用内存缓存"><span class="nav-number">4.1.</span> <span class="nav-text">使用内存缓存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用磁盘缓存"><span class="nav-number">4.2.</span> <span class="nav-text">使用磁盘缓存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#处理配置更改"><span class="nav-number">4.3.</span> <span class="nav-text">处理配置更改</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Bitmap内存管理"><span class="nav-number">5.</span> <span class="nav-text">Bitmap内存管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-3-及其之前版本的内存管理"><span class="nav-number">5.1.</span> <span class="nav-text">2.3.3 及其之前版本的内存管理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Android-3-0-及之后版本内存管理"><span class="nav-number">5.2.</span> <span class="nav-text">Android 3.0 及之后版本内存管理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#保存bitmap为以后使用"><span class="nav-number">5.2.1.</span> <span class="nav-text">保存bitmap为以后使用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#使用已有的bitmap"><span class="nav-number">5.2.2.</span> <span class="nav-text">使用已有的bitmap</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#在界面上显示Bitmap"><span class="nav-number">6.</span> <span class="nav-text">在界面上显示Bitmap</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#在ViewPager中加载Bitmap的实现"><span class="nav-number">6.1.</span> <span class="nav-text">在ViewPager中加载Bitmap的实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#在GridView中加载Bitmap的实现"><span class="nav-number">6.2.</span> <span class="nav-text">在GridView中加载Bitmap的实现</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">xiaofei</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+      <span class="post-meta-item-text">Site words total count&#58;</span>
+    
+    <span title="Site words total count">10.3k</span>
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
